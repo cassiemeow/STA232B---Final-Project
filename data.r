@@ -53,7 +53,7 @@ for (i in 1:ite) {
     for (k in 1:litter) {
       a_new = exp(mu+alpha_update[k])^data[k,2]/(1+exp(mu+alpha_update[k]))^data[k,1]
       a_old = exp(mu+alpha_initial[k])^data[k,2]/(1+exp(mu+alpha_initial[k]))^data[k,1]
-      alpha = min(1, a_new/a_old)
+      alpha = pmin(1, a_new/a_old)
       
       u = runif(1)
       if (u < alpha) {alpha_initial[k] = alpha_update[k]}
@@ -88,7 +88,7 @@ ggplot(data=final_musig, aes(x = iteration, y = mu)) +
   ylab("MLE of mu") +
   theme_minimal()
 
-ggplot(data=final_musig, aes(x = iteration, y = sigma2)) +
+ggplot(data=final_musig, aes(x = iteration, y = sigma)) +
   geom_point() +
   xlab("Iteration") +
   ylab("MLE of sigma") +
@@ -104,12 +104,12 @@ out = matrix(NA, ncol = 1, nrow = litter)
   ## Metropolis-Hastings algorithm
   alpha_initial = rnorm(litter, 0, sigma)
   for (j in 1:1000) { # set a relatively large number for convergence
-    alpha_update = rnorm(litter, mean=0, sd=sigma)
+    alpha_update = rnorm(litter, 0, sigma)
     
     for (k in 1:litter) {
       a_new = exp(mu+alpha_update[k])^data[k,2]/(1+exp(mu+alpha_update[k]))^data[k,1]
       a_old = exp(mu+alpha_initial[k])^data[k,2]/(1+exp(mu+alpha_initial[k]))^data[k,1]
-      alpha = min(1, a_new/a_old)
+      alpha = pmin(1, a_new/a_old)
       
       u = runif(1)
       if (u < alpha) {alpha_initial[k] = alpha_update[k]}
