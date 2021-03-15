@@ -83,3 +83,42 @@ final_result = cbind(final_mu, final_sigma)
 
 # save(final_result,file="/Users/xuchenghuiyun/Desktop/final.Rdata")
 # load(file="/Users/xuchenghuiyun/Desktop/final.Rdata")
+
+set.seed(232)
+litter = 1328
+######################
+mu = -2.276878
+sigma = 0.6742865
+######################
+out = matrix(NA, ncol = 1, nrow = litter)
+
+  ## Metropolis-Hastings algorithm
+  alpha_initial = rnorm(litter, 0, sigma)
+  for (k in 1:1500) { # set a relatively large number for convergence
+    alpha_update = rnorm(litter, 0, sigma)
+    
+    for (j in 1:litter) {
+      p_new = exp(mu+alpha_update[j])^data[j,2]/(1+exp(mu+alpha_update[j]))^data[j,1]
+      p_old = exp(mu+alpha_initial[j])^data[j,2]/(1+exp(mu+alpha_initial[j]))^data[j,1]
+      alpha = min(1, p_new/p_old)
+      
+      u = runif(1)
+      if (u < alpha) {alpha_initial[j] = alpha_update[j]}
+    }
+    out = cbind(out, alpha_initial)
+  }
+  out = out[,-(1:1000)] # drop the non-converged values
+
+I = matrix(0, 2, 2)  
+for (i in 1:ncol(out)){
+  alpha = out[,i]
+  H = c(matrix(data[,1],nrow=1)%*%matrix(expit(mu+alpha)/(1+exp(mu+alpha)),ncol=1),
+        3*alpha %*% alpha /(sigma^4)-1328/sigma^2)
+  H = diag(H)
+  S = c(sum(data[,2]) - data[,1]%*%expit(mu+alpha),
+        alpha %*% alpha /sigma^3-1328/sigma)
+  I = I + H - matrix(S, ncol = 1) %*% matrix(S, ncol = 2)
+}
+I  = I/ncol(out)
+sqrt(solve(I)[1,1])
+sqrt(solve(I)[2,2])
