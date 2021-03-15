@@ -39,31 +39,32 @@ set.seed(232)
 litter = 1328
 mu = -2
 sigma = 0.7
+ite = 30
 out = matrix(NA, ncol = 1, nrow = litter)
-final_musig = matrix(NA, ncol = 3, nrow = 30)
+final_musig = matrix(NA, ncol = 3, nrow = ite)
 
-for (i in 1:30) {
+for (i in 1:ite) {
   # E-step
   ## Metropolis-Hastings algorithm
-  alpha_initial = rnorm(litter, mean=0, sd=sigma)
-  for (k in 1:1000) { # set a relatively large number for convergence
-    alpha_update = rnorm(litter, mean=0, sd=sigma)
+  alpha_initial = rnorm(litter, 0, sigma)
+  for (j in 1:1000) { # set a relatively large number for convergence
+    alpha_update = rnorm(litter, 0, sigma)
     
-    for (j in 1:litter) {
-      a_new = exp(mu+alpha_update[j])^data[j,2]/(1+exp(mu+alpha_update[j]))^data[j,1]
-      a_old = exp(mu+alpha_initial[j])^data[j,2]/(1+exp(mu+alpha_initial[j]))^data[j,1]
+    for (k in 1:litter) {
+      a_new = exp(mu+alpha_update[k])^data[k,2]/(1+exp(mu+alpha_update[k]))^data[k,1]
+      a_old = exp(mu+alpha_initial[k])^data[k,2]/(1+exp(mu+alpha_initial[k]))^data[k,1]
       alpha = min(1, a_new/a_old)
       
       u = runif(1)
-      if (u < alpha) {alpha_initial[j] = alpha_update[j]}
+      if (u < alpha) {alpha_initial[k] = alpha_update[k]}
     }
     out = cbind(out, alpha_initial)
   }
   out = out[,-(1:500)] # drop the non-converged values
   
   fr = function(x) {
-    -mean(apply(out,2, function(i) {sum(x*data[,2]+data[,2]*i) -
-        sum(data[,1]*log(1+exp(x+i)))
+    -mean(apply(out, 2, function(o) {sum((x+o)*data[,2]) -
+        sum(log(1+exp(x+o))*data[,1]) # loss function
     }))}
   
   # M-step
@@ -73,7 +74,7 @@ for (i in 1:30) {
   mu = final$par
   sigma = sqrt(mean(out^2))
   
-  final_musig[i,] = paste(i, mu, sigma)
+  final_musig[i,] = cbind(i, mu, sigma)
   final_mu[i] = mu
   final_sigma[i] = sigma
 }
@@ -103,16 +104,16 @@ out = matrix(NA, ncol = 1, nrow = litter)
 
   ## Metropolis-Hastings algorithm
   alpha_initial = rnorm(litter, 0, sigma)
-  for (k in 1:1000) { # set a relatively large number for convergence
-    alpha_update = rnorm(litter, 0, sigma)
+  for (j in 1:1000) { # set a relatively large number for convergence
+    alpha_update = rnorm(litter, mean=0, sd=sigma)
     
-    for (j in 1:litter) {
-      a_new = exp(mu+alpha_update[j])^data[j,2]/(1+exp(mu+alpha_update[j]))^data[j,1]
-      a_old = exp(mu+alpha_initial[j])^data[j,2]/(1+exp(mu+alpha_initial[j]))^data[j,1]
+    for (k in 1:litter) {
+      a_new = exp(mu+alpha_update[k])^data[k,2]/(1+exp(mu+alpha_update[k]))^data[k,1]
+      a_old = exp(mu+alpha_initial[k])^data[k,2]/(1+exp(mu+alpha_initial[k]))^data[k,1]
       alpha = min(1, a_new/a_old)
       
       u = runif(1)
-      if (u < alpha) {alpha_initial[j] = alpha_update[j]}
+      if (u < alpha) {alpha_initial[k] = alpha_update[k]}
     }
     out = cbind(out, alpha_initial)
   }
