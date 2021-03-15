@@ -41,45 +41,55 @@ mu = -2
 sigma = 0.7
 out = matrix(NA, ncol = 1, nrow = litter)
 
-for (i in 1:20) {
+for (i in 1:30) {
   # E-step
   ## Metropolis-Hastings algorithm
   alpha_initial = rnorm(litter, mean=0, sd=sigma)
-  for (j in 1:1000) { # set a relatively large number for convergence
+  for (k in 1:1000) { # set a relatively large number for convergence
     alpha_update = rnorm(litter, mean=0, sd=sigma)
     
-    for (k in 1:litter) {
-      a_new = expit(mu+alpha_update[k])^data[k,2]*
-        (1-expit(mu+alpha_update[k]))^(data[k,1]-data[k,2])
-      a_old = expit(mu+alpha_initial[k])^data[k,2]*
-        (1-expit(mu+alpha_initial[k]))^(data[k,1]-data[k,2])
+    for (j in 1:litter) {
+      a_new = exp(mu+alpha_update[j])^data[j,2]/(1+exp(mu+alpha_update[j]))^data[j,1]
+      a_old = exp(mu+alpha_initial[j])^data[j,2]/(1+exp(mu+alpha_initial[j]))^data[j,1]
       alpha = min(1, a_new/a_old)
       
       u = runif(1)
-      if (u < alpha) {alpha_initial[k] = alpha_update[k]}
+      if (u < alpha) {alpha_initial[j] = alpha_update[j]}
     }
     out = cbind(out, alpha_initial)
   }
   out = out[,-(1:500)] # drop the non-converged values
   
   fr = function(x) {
-    -mean(apply(out,2, function(o) {sum((x+o) * data[,2]) -
-        sum(log(1+exp(x+o)) * data[,1]) # loss function
+    -mean(apply(out,2, function(i) {sum(x*data[,2]+data[,2]*i) -
+        sum(data[,1]*log(1+exp(x+i)))
     }))}
   
   # M-step
   final_mu = NULL
   final_sigma = NULL
-  final = optim(mu, fr, lower = -5, upper = 5, method = "L-BFGS-B")
-  mu = final$par
-  sigma = sqrt(mean(out^2))
+    final = optim(mu, fr, lower = -5, upper = 5, method = "L-BFGS-B")
+    mu = final$par
+    sigma = sqrt(mean(out^2))
     
-  print(paste(i, mu, sigma))
-  final_mu[i] = mu
-  final_sigma[i] = sigma
+    print(paste(i, mu, sigma))
+    final_mu[i] = mu
+    final_sigma[i] = sigma
 }
 
-final_result = cbind(final_mu, final_sigma)
+final_result = c(final_mu[30], final_sigma[30])
+
+mu_result = c(-2.201063438,-2.258719093,-2.268630974,-2.273614399,-2.274986966,-2.275624713,-2.275585099
+,-2.275424387,-2.275470593,-2.275535516,-2.275852576,-2.274899202,-2.274859851,-2.274843385,-2.274928345
+,-2.274776375,-2.274771227,-2.274588585,-2.274358027,-2.274551402,-2.274416098,-2.274216286,-2.274105974
+,-2.274019603,-2.27403727,-2.273997129,-2.273955056,-2.273858039,-2.27388587,-2.273768701)
+
+sigma_result = c(0.687109262,0.680981447,0.678560417,0.675848428,0.675100617,0.67434348,0.673529551
+,0.673088305,0.672850585,0.672640734,0.672808548,0.671775368,0.67154516,0.671387591,0.671178017
+,0.670688836,0.670425547,0.670056778,0.669656354,0.669726186,0.669533155,0.669422091,0.669232574,
+0.668945662,0.668774407,0.668561676,0.668452382,0.668288421,0.66826806,0.668078129)
+
+ok = cbind(seq(1:30), mu_result, sigma_result) %>% data.frame()
 
 # save(final_result,file="/Users/xuchenghuiyun/Desktop/final.Rdata")
 # load(file="/Users/xuchenghuiyun/Desktop/final.Rdata")
