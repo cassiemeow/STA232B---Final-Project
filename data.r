@@ -131,3 +131,52 @@ for (i in 1:ncol(out)){
 I  = I/ncol(out)
 sqrt(solve(I)[1,1])
 sqrt(solve(I)[2,2])
+
+## Numerical Integration
+s <- seq(1,25,1)
+d <- length(s)
+model1 <- glmer(cbind(Ndead, Nimplants-Ndead) ~ 1 + (1|litter), family = binomial, data = mice) #nAGQ = 1, laplace approximation
+s_model1 <- summary(model1)
+co <- s_model1$coefficients
+
+mle <- matrix(0, nrow = d, ncol = 2)
+a <- 0
+mle_se <- matrix(0, nrow = d, ncol = 2)
+
+for (i in s) {
+  a <- a + 1
+  model <- glmer(cbind(Ndead, Nimplants-Ndead) ~ 1 + (1|litter), family = binomial, nAGQ = i, data = mice) #take different values of nAGQ
+  s_model <- summary(model)
+  co <- s_model$coefficients
+  mle[a,1] <- co[1]
+  mle[a,2] <- sqrt(unlist(VarCorr(model)))
+  asy = vcov(model, full=TRUE, ranpar="sd")
+  mle_se[a,1] <- sqrt(asy[1,1])
+  mle_se[a,2] <- sqrt(asy[2,2])
+}
+
+print(cbind(s,mle))
+print(cbind(s,mle_se))
+MLE_mu <- cbind(s,mle[,1],mle_se[,1])
+colnames(MLE_mu) <- c('nAGQ', 'MLE_mu', 'StandardError_mu')
+MLE_mu <- as.data.frame(MLE_mu)
+
+MLE_mu %>%
+ggplot(aes(nAGQ, MLE_mu)) +
+geom_pointrange(aes(ymin = MLE_mu - StandardError_mu, ymax = MLE_mu + StandardError_mu))
+
+MLE_sig <- cbind(s,mle[,2],mle_se[,2])
+colnames(MLE_sig) <- c('nAGQ', 'MLE_sigma', 'StandardError_sigma')
+MLE_sig <- as.data.frame(MLE_sig)
+
+MLE_sig %>%
+ggplot(aes(nAGQ, MLE_sigma)) +
+geom_pointrange(aes(ymin = MLE_sigma - StandardError_sigma, ymax = MLE_sigma + StandardError_sigma))
+
+## Bootstrap
+mySumm <- function(mod) {
+   c(sigma_e_square = getME(model,"fixef"), sigma_s = sqrt(unlist(VarCorr(mod))))
+}
+
+booted <- bootMer(model, mySumm, nsim = 100, seed = 2047)
+booted
