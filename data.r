@@ -80,7 +80,7 @@ for (i in 1:ite) {
 }
 
 final_musig = as.data.frame(final.musig)
-colnames(final_musig) = c("iteration","mu","sigma2")
+colnames(final_musig) = c("iteration","mu","sigma")
 
 ggplot(data=final_musig, aes(x = iteration, y = mu)) +
   geom_point() +
@@ -91,15 +91,14 @@ ggplot(data=final_musig, aes(x = iteration, y = mu)) +
 ggplot(data=final_musig, aes(x = iteration, y = sigma2)) +
   geom_point() +
   xlab("Iteration") +
-  ylab("MLE of sigma^2") +
-  ylim(0.44, 0.56) +
+  ylab("MLE of sigma") +
   theme_minimal()
 
 #### SE
 set.seed(232)
 litter = 1328
 mu = final_musig$mu[30]
-sigma = final_musig$sigma2[30]
+sigma = final_musig$sigma[30]
 out = matrix(NA, ncol = 1, nrow = litter)
 
   ## Metropolis-Hastings algorithm
