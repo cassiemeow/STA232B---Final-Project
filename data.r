@@ -40,6 +40,7 @@ litter = 1328
 mu = -2
 sigma = 0.7
 out = matrix(NA, ncol = 1, nrow = litter)
+final_musig = matrix(NA, ncol = 3, nrow = 30)
 
 for (i in 1:30) {
   # E-step
@@ -68,56 +69,54 @@ for (i in 1:30) {
   # M-step
   final_mu = NULL
   final_sigma = NULL
-    final = optim(mu, fr, lower = -5, upper = 5, method = "L-BFGS-B")
-    mu = final$par
-    sigma = sqrt(mean(out^2))
-    
-    print(paste(i, mu, sigma))
-    final_mu[i] = mu
-    final_sigma[i] = sigma
+  final = optim(mu, fr, lower = -5, upper = 5, method = "L-BFGS-B")
+  mu = final$par
+  sigma = sqrt(mean(out^2))
+  
+  final_musig[i,] = paste(i, mu, sigma)
+  final_mu[i] = mu
+  final_sigma[i] = sigma
 }
 
-final_result = c(final_mu[30], final_sigma[30])
+final_musig = as.data.frame(final.musig)
+colnames(final_musig) = c("iteration","mu","sigma2")
 
-mu_result = c(-2.201063438,-2.258719093,-2.268630974,-2.273614399,-2.274986966,-2.275624713,-2.275585099
-,-2.275424387,-2.275470593,-2.275535516,-2.275852576,-2.274899202,-2.274859851,-2.274843385,-2.274928345
-,-2.274776375,-2.274771227,-2.274588585,-2.274358027,-2.274551402,-2.274416098,-2.274216286,-2.274105974
-,-2.274019603,-2.27403727,-2.273997129,-2.273955056,-2.273858039,-2.27388587,-2.273768701)
+ggplot(data=final_musig, aes(x = iteration, y = mu)) +
+  geom_point() +
+  xlab("Iteration") +
+  ylab("MLE of mu") +
+  theme_minimal()
 
-sigma_result = c(0.687109262,0.680981447,0.678560417,0.675848428,0.675100617,0.67434348,0.673529551
-,0.673088305,0.672850585,0.672640734,0.672808548,0.671775368,0.67154516,0.671387591,0.671178017
-,0.670688836,0.670425547,0.670056778,0.669656354,0.669726186,0.669533155,0.669422091,0.669232574,
-0.668945662,0.668774407,0.668561676,0.668452382,0.668288421,0.66826806,0.668078129)
+ggplot(data=final_musig, aes(x = iteration, y = sigma2)) +
+  geom_point() +
+  xlab("Iteration") +
+  ylab("MLE of sigma^2") +
+  ylim(0.44, 0.56) +
+  theme_minimal()
 
-ok = cbind(seq(1:30), mu_result, sigma_result) %>% data.frame()
-
-# save(final_result,file="/Users/xuchenghuiyun/Desktop/final.Rdata")
-# load(file="/Users/xuchenghuiyun/Desktop/final.Rdata")
-
+#### SE
 set.seed(232)
 litter = 1328
-######################
-mu = -2.276878
-sigma = 0.6742865
-######################
+mu = final_musig$mu[30]
+sigma = final_musig$sigma2[30]
 out = matrix(NA, ncol = 1, nrow = litter)
 
   ## Metropolis-Hastings algorithm
   alpha_initial = rnorm(litter, 0, sigma)
-  for (k in 1:1500) { # set a relatively large number for convergence
+  for (k in 1:1000) { # set a relatively large number for convergence
     alpha_update = rnorm(litter, 0, sigma)
     
     for (j in 1:litter) {
-      p_new = exp(mu+alpha_update[j])^data[j,2]/(1+exp(mu+alpha_update[j]))^data[j,1]
-      p_old = exp(mu+alpha_initial[j])^data[j,2]/(1+exp(mu+alpha_initial[j]))^data[j,1]
-      alpha = min(1, p_new/p_old)
+      a_new = exp(mu+alpha_update[j])^data[j,2]/(1+exp(mu+alpha_update[j]))^data[j,1]
+      a_old = exp(mu+alpha_initial[j])^data[j,2]/(1+exp(mu+alpha_initial[j]))^data[j,1]
+      alpha = min(1, a_new/a_old)
       
       u = runif(1)
       if (u < alpha) {alpha_initial[j] = alpha_update[j]}
     }
     out = cbind(out, alpha_initial)
   }
-  out = out[,-(1:1000)] # drop the non-converged values
+  out = out[,-(1:500)] # drop the non-converged values
 
 I = matrix(0, 2, 2)  
 for (i in 1:ncol(out)){
