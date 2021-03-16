@@ -175,7 +175,7 @@ geom_pointrange(aes(ymin = MLE_sigma - StandardError_sigma, ymax = MLE_sigma + S
 
 ## Bootstrap
 mySumm <- function(mod) {
-   c(sigma_e_square = getME(model,"fixef"), sigma_s = sqrt(unlist(VarCorr(mod))))
+   c(sigma_e_square = getME(mod,"fixef"), sigma_s = sqrt(unlist(VarCorr(mod))))
 }
 
 booted <- bootMer(model, mySumm, nsim = 100, seed = 2047)
